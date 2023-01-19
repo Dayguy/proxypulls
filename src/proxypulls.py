@@ -3,18 +3,23 @@
 import os
 import io
 import json
+import shutil
 import requests
 import argparse
 
 PROXYCHAINS_CONF = "/etc/proxychains.conf"
 
-# def backup(file):
-#     backupName = file + ".orig"
-#     print(backupName)
-#     shutil(file, backupName)
+def backup():
+    try:
+        if PROXYCHAINS_CONF:
+            backupName = PROXYCHAINS_CONF + ".orig"
+            shutil.copy2(PROXYCHAINS_CONF, backupName)
+        else: 
+            print("Trouble copying {}".format(PROXYCHAINS_CONF))
+    except:
+        print("Unable to locate {}".format(PROXYCHAINS_CONF))
 
 def setConf(proxyList):
-    # backup(PROXYCHAINS_CONF)
     newLines = []
     with io.open(PROXYCHAINS_CONF, 'r') as orig:
         for line in orig.readlines():
@@ -42,7 +47,8 @@ def getProxy():
     myResponse = requests.get("{}{}".format(baseUrl, endPoint))
     if (myResponse.ok):
         jData = json.loads(myResponse.content)
-        return jData['type'].lower() + " " + jData['host'] + " " + str(jData['port'])
+        if jData['isAlive']:
+            return jData['type'].lower() + " " + jData['host'] + " " + str(jData['port'])
 
 
 def main():
@@ -65,8 +71,8 @@ def main():
         proxy = getProxy()
         proxies.append(proxy + '{}'.format(os.linesep))
 
+    backup()
     setConf(proxies)
-
 
 if __name__ == "__main__":
     main()
